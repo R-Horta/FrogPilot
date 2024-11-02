@@ -22,7 +22,7 @@ SETTINGS_BUTTONS_DICT = {CruiseSettings.DISTANCE: ButtonType.gapAdjustCruise, Cr
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
-  def get_pid_accel_limits(CP, current_speed, cruise_speed, frogpilot_toggles):
+  def get_pid_accel_limits(CP, current_speed, cruise_speed):
     if CP.carFingerprint in HONDA_BOSCH:
       return CarControllerParams.BOSCH_ACCEL_MIN, CarControllerParams.BOSCH_ACCEL_MAX
     elif CP.enableGasInterceptor:

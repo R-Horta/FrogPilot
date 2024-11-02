@@ -121,6 +121,8 @@ void FrogPilotMapsPanel::updateState(const UIState &s) {
     return;
   }
 
+  uiState()->scene.keep_screen_on = downloadActive;
+
   if (downloadActive) {
     updateDownloadStatusLabels();
   }
@@ -136,8 +138,6 @@ void FrogPilotMapsPanel::cancelDownload() {
 }
 
 void FrogPilotMapsPanel::downloadMaps() {
-  device()->resetInteractiveTimeout(300);
-
   params.remove("OSMDownloadProgress");
 
   resetDownloadLabels();

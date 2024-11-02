@@ -22,6 +22,7 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
     if (param == "ModelRandomizer") {
       FrogPilotParamManageControl *modelRandomizerToggle = new FrogPilotParamManageControl(param, title, desc, icon);
       QObject::connect(modelRandomizerToggle, &FrogPilotParamManageControl::manageButtonClicked, [this]() {
+        modelRandomizerOpen = true;
         showToggles(modelRandomizerKeys);
         updateModelLabels();
       });
@@ -147,8 +148,6 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
           paramsMemory.remove("ModelToDownload");
           paramsMemory.putBool("CancelModelDownload", true);
           cancellingDownload = true;
-
-          device()->resetInteractiveTimeout(30);
         } else {
           QMap<QString, QString> labelToModelMap;
           QStringList existingModels = modelDir.entryList({"*.thneed"}, QDir::Files);
@@ -164,8 +163,6 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
 
           QString modelToDownload = MultiOptionDialog::getSelection(tr("Select a driving model to download"), downloadableModels, "", this);
           if (!modelToDownload.isEmpty()) {
-            device()->resetInteractiveTimeout(300);
-
             modelDownloading = true;
             paramsMemory.put("ModelToDownload", labelToModelMap.value(modelToDownload).toStdString());
             paramsMemory.put("ModelDownloadProgress", "0%");
@@ -221,8 +218,6 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
 
                     params.putBoolNonBlocking("ModelsDownloaded", modelsDownloaded);
                   }
-
-                  device()->resetInteractiveTimeout(30);
                 });
               }
             });
@@ -238,11 +233,7 @@ FrogPilotModelPanel::FrogPilotModelPanel(FrogPilotSettingsWindow *parent) : Frog
           paramsMemory.remove("DownloadAllModels");
           paramsMemory.putBool("CancelModelDownload", true);
           cancellingDownload = true;
-
-          device()->resetInteractiveTimeout(30);
         } else {
-          device()->resetInteractiveTimeout(300);
-
           startDownloadAllModels();
         }
       });
@@ -378,6 +369,8 @@ void FrogPilotModelPanel::showEvent(QShowEvent *event) {
 void FrogPilotModelPanel::updateState(const UIState &s) {
   if (!isVisible()) return;
 
+  uiState()->scene.keep_screen_on = modelDownloading;
+
   downloadAllModelsBtn->setText(modelDownloading && allModelsDownloading ? tr("CANCEL") : tr("DOWNLOAD"));
   downloadModelBtn->setText(modelDownloading && !allModelsDownloading ? tr("CANCEL") : tr("DOWNLOAD"));
 
@@ -430,8 +423,6 @@ void FrogPilotModelPanel::startDownloadAllModels() {
         paramsMemory.remove("DownloadAllModels");
 
         downloadAllModelsBtn->setValue("");
-
-        device()->resetInteractiveTimeout(30);
       });
     }
   });
@@ -506,6 +497,8 @@ void FrogPilotModelPanel::showToggles(const std::set<QString> &keys) {
 void FrogPilotModelPanel::hideToggles() {
   setUpdatesEnabled(false);
 
+  modelRandomizerOpen = false;
+
   for (LabelControl *label : labelControls) {
     label->setVisible(false);
   }
@@ -521,7 +514,18 @@ void FrogPilotModelPanel::hideToggles() {
 }
 
 void FrogPilotModelPanel::hideSubToggles() {
-  for (LabelControl *label : labelControls) {
-    label->setVisible(false);
+  setUpdatesEnabled(false);
+
+  if (modelRandomizerOpen) {
+    for (LabelControl *label : labelControls) {
+      label->setVisible(false);
+    }
+
+    for (auto &[key, toggle] : toggles) {
+      toggle->setVisible(modelRandomizerKeys.find(key) != modelRandomizerKeys.end());
+    }
   }
+
+  setUpdatesEnabled(true);
+  update();
 }

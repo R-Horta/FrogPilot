@@ -148,6 +148,8 @@ void FrogPilotSettingsWindow::closePanel() {
   if (currentWidget != frogpilotSettingsWidget) {
     mainLayout->removeWidget(currentWidget);
   }
+
+  uiState()->scene.keep_screen_on = false;
 }
 
 void FrogPilotSettingsWindow::updatePanelVisibility() {
@@ -168,6 +170,8 @@ void FrogPilotSettingsWindow::updatePanelVisibility() {
 }
 
 void FrogPilotSettingsWindow::updateCarVariables() {
+  util::sleep_for(1000);
+
   float currentFrictionStock = params.getFloat("SteerFrictionStock");
   float currentKPStock = params.getFloat("SteerKPStock");
   float currentLatAccelStock = params.getFloat("SteerLatAccelStock");

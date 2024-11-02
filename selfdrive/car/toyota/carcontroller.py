@@ -2,7 +2,6 @@ import math
 
 from cereal import car
 from openpilot.common.numpy_fast import clip, interp
-from openpilot.common.params import Params
 from openpilot.selfdrive.car import apply_meas_steer_torque_limits, apply_std_steer_angle_limits, common_fault_avoidance, create_gas_interceptor_command, make_can_msg, rate_limit
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.toyota import toyotacan
@@ -61,8 +60,6 @@ class CarController(CarControllerBase):
     self.accel = 0
 
     # FrogPilot variables
-    params = Params()
-
     self.doors_locked = False
     self.reverse_cruise_active = False
 
@@ -216,10 +213,10 @@ class CarController(CarControllerBase):
         pcm_accel_cmd = min(pcm_accel_cmd, self.accel + ACCEL_WINDUP_LIMIT) if CC.longActive else 0.0
 
         can_sends.append(toyotacan.create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.permit_braking, self.standstill_req, lead,
-                                                        CS.acc_type, fcw_alert, self.distance_button, frogpilot_toggles, self.reverse_cruise_active))
+                                                        CS.acc_type, fcw_alert, self.distance_button, self.reverse_cruise_active))
         self.accel = pcm_accel_cmd
       else:
-        can_sends.append(toyotacan.create_accel_command(self.packer, 0, pcm_cancel_cmd, True, False, lead, CS.acc_type, False, self.distance_button, frogpilot_toggles, self.reverse_cruise_active))
+        can_sends.append(toyotacan.create_accel_command(self.packer, 0, pcm_cancel_cmd, True, False, lead, CS.acc_type, False, self.distance_button, self.reverse_cruise_active))
 
     if self.frame % 2 == 0 and self.CP.enableGasInterceptor and self.CP.openpilotLongitudinalControl:
       # send exactly zero if gas cmd is zero. Interceptor will send the max between read value and gas cmd.

@@ -40,12 +40,12 @@ class SpeedLimitController:
   def get_map_speed_limit(self, v_ego, frogpilot_toggles):
     map_speed_limit = self.params_memory.get_float("MapSpeedLimit")
 
-    next_map_speed_limit = json.loads(self.params_memory.get("NextMapSpeedLimit"))
+    next_map_speed_limit = json.loads(self.params_memory.get("NextMapSpeedLimit", "{}"))
     next_map_speed_limit_lat = next_map_speed_limit.get("latitude", 0)
     next_map_speed_limit_lon = next_map_speed_limit.get("longitude", 0)
     next_map_speed_limit_value = next_map_speed_limit.get("speedlimit", 0)
 
-    position = json.loads(self.params_memory.get("LastGPSPosition"))
+    position = json.loads(self.params_memory.get("LastGPSPosition", "{}"))
     lat = position.get("latitude", 0)
     lon = position.get("longitude", 0)
 

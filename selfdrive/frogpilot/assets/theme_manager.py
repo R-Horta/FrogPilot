@@ -261,7 +261,7 @@ class ThemeManager:
     self.params_memory.put(DOWNLOAD_PROGRESS_PARAM, "Theme already exists...")
     self.params_memory.remove(theme_param)
 
-  def handle_verification_failure(self, extentions, theme_component, theme_name, theme_param, download_path):
+  def handle_verification_failure(self, extensions, theme_component, theme_name, theme_param, download_path):
     if theme_component == "distance_icons":
       download_link = f"{GITLAB_URL}Distance-Icons/{theme_name}"
     elif theme_component == "steering_wheels":
@@ -269,13 +269,14 @@ class ThemeManager:
     else:
       download_link = f"{GITLAB_URL}Themes/{theme_name}/{theme_component}"
 
-    for ext in extentions:
+    for ext in extensions:
       theme_path = download_path + ext
+      temp_theme_path = f"{os.path.splitext(theme_path)[0]}_temp{ext}"
       theme_url = download_link + ext
       print(f"Downloading theme from GitLab: {theme_name}")
-      download_file(CANCEL_DOWNLOAD_PARAM, theme_path, DOWNLOAD_PROGRESS_PARAM, theme_url, theme_param, self.params_memory)
+      download_file(CANCEL_DOWNLOAD_PARAM, theme_path, temp_theme_path, DOWNLOAD_PROGRESS_PARAM, theme_url, theme_param, self.params_memory)
 
-      if verify_download(theme_path, theme_url):
+      if verify_download(theme_path, temp_theme_path, theme_url):
         print(f"Theme {theme_name} downloaded and verified successfully from GitLab!")
         if ext == ".zip":
           self.params_memory.put(DOWNLOAD_PROGRESS_PARAM, "Unpacking theme...")
@@ -296,27 +297,29 @@ class ThemeManager:
     if theme_component == "distance_icons":
       download_link = f"{repo_url}Distance-Icons/{theme_name}"
       download_path = os.path.join(THEME_SAVE_PATH, theme_component, theme_name)
-      extentions = [".zip"]
+      extensions = [".zip"]
     elif theme_component == "steering_wheels":
       download_link = f"{repo_url}Steering-Wheels/{theme_name}"
       download_path = os.path.join(THEME_SAVE_PATH, theme_component, theme_name)
-      extentions = [".gif", ".png"]
+      extensions = [".gif", ".png"]
     else:
       download_link = f"{repo_url}Themes/{theme_name}/{theme_component}"
       download_path = os.path.join(THEME_SAVE_PATH, "theme_packs", theme_name, theme_component)
-      extentions = [".zip"]
+      extensions = [".zip"]
 
-    for ext in extentions:
+    for ext in extensions:
       theme_path = download_path + ext
+      temp_theme_path = f"{os.path.splitext(theme_path)[0]}_temp{ext}"
+
       if os.path.isfile(theme_path):
         handle_error(theme_path, "Theme already exists...", "Theme already exists...", theme_param, DOWNLOAD_PROGRESS_PARAM, self.params_memory)
         return
 
       theme_url = download_link + ext
       print(f"Downloading theme from GitHub: {theme_name}")
-      download_file(CANCEL_DOWNLOAD_PARAM, theme_path, DOWNLOAD_PROGRESS_PARAM, theme_url, theme_param, self.params_memory)
+      download_file(CANCEL_DOWNLOAD_PARAM, theme_path, temp_theme_path, DOWNLOAD_PROGRESS_PARAM, theme_url, theme_param, self.params_memory)
 
-      if verify_download(theme_path, theme_url):
+      if verify_download(theme_path, temp_theme_path, theme_url):
         print(f"Theme {theme_name} downloaded and verified successfully from GitHub!")
         if ext == ".zip":
           self.params_memory.put(DOWNLOAD_PROGRESS_PARAM, "Unpacking theme...")
@@ -325,7 +328,7 @@ class ThemeManager:
         self.params_memory.remove(theme_param)
         return
 
-    self.handle_verification_failure(extentions, theme_component, theme_name, theme_param, download_path)
+    self.handle_verification_failure(extensions, theme_component, theme_name, theme_param, download_path)
 
   def update_theme_params(self, downloadable_colors, downloadable_distance_icons, downloadable_icons, downloadable_signals, downloadable_sounds, downloadable_wheels):
     def filter_existing_assets(assets, subfolder):

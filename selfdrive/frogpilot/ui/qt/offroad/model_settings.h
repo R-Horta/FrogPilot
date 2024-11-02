@@ -53,6 +53,7 @@ private:
   bool modelDeleting;
   bool modelDownloading;
   bool modelRandomizer;
+  bool modelRandomizerOpen;
   bool modelsDownloaded;
   bool started;
 

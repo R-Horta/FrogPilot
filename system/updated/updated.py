@@ -274,7 +274,7 @@ class Updater:
   def get_commit_hash(self, path: str = OVERLAY_MERGED) -> str:
     return run(["git", "rev-parse", "HEAD"], path).rstrip()
 
-  def set_params(self, update_success: bool, failed_count: int, exception: str | None) -> None:
+  def set_params(self, update_success: bool, failed_count: int, exception: str | None, frogpilot_toggles: None) -> None:
     self.params.put("UpdateFailedCount", str(failed_count))
     self.params.put("UpdaterTargetBranch", self.target_branch)
 
@@ -310,7 +310,7 @@ class Updater:
         with open(os.path.join(basedir, "common", "version.h")) as f:
           version = f.read().split('"')[1]
 
-        commit_unix_ts = run(["git", "show", "-s", "--format=%ct", "HEAD"], basedir).split()[0]
+        commit_unix_ts = run(["git", "show", "-s", "--format=%ct", "HEAD"], basedir).rstrip()
         dt = datetime.datetime.fromtimestamp(int(commit_unix_ts))
         commit_date = dt.strftime("%b %d")
       except Exception:
@@ -327,7 +327,7 @@ class Updater:
       set_offroad_alert(alert, False)
 
     now = datetime.datetime.utcnow()
-    if get_frogpilot_toggles(True).offline_mode:
+    if frogpilot_toggles.offline_mode:
       last_update = now
     dt = now - last_update
     build_metadata = get_build_metadata()
@@ -417,10 +417,6 @@ def main() -> None:
   params = Params()
   params_memory = Params("/dev/shm/params")
 
-  if params.get_bool("DisableUpdates"):
-    cloudlog.warning("updates are disabled by the DisableUpdates param")
-    exit(0)
-
   with open(LOCK_FILE, 'w') as ov_lock_fd:
     try:
       fcntl.flock(ov_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -448,6 +444,10 @@ def main() -> None:
 
     # Run the update loop
     first_run = True
+
+    # FrogPilot variables
+    frogpilot_toggles = get_frogpilot_toggles()
+
     install_date_set = params.get("InstallDate", encoding='utf-8') is not None and params.get("Updated", encoding='utf-8') is not None
 
     while True:
@@ -460,7 +460,7 @@ def main() -> None:
         init_overlay()
 
         # ensure we have some params written soon after startup
-        updater.set_params(False, update_failed_count, exception)
+        updater.set_params(False, update_failed_count, exception, frogpilot_toggles)
 
         if not system_time_valid() or first_run:
           first_run = False
@@ -472,7 +472,7 @@ def main() -> None:
           params.put_nonblocking("InstallDate", datetime.datetime.now().astimezone(ZoneInfo('America/Phoenix')).strftime("%B %d, %Y - %I:%M%p").encode('utf8'))
           install_date_set = True
 
-        if not (params.get_bool("AutomaticUpdates") or params_memory.get_bool("ManualUpdateInitiated")):
+        if not (frogpilot_toggles.automatic_updates or params_memory.get_bool("ManualUpdateInitiated")):
           wait_helper.sleep(60*60*24*365*100)
           continue
 
@@ -512,7 +512,7 @@ def main() -> None:
       try:
         params.put("UpdaterState", "idle")
         update_successful = (update_failed_count == 0)
-        updater.set_params(update_successful, update_failed_count, exception)
+        updater.set_params(update_successful, update_failed_count, exception, frogpilot_toggles)
       except Exception:
         cloudlog.exception("uncaught updated exception while setting params, shouldn't happen")
 

@@ -15,9 +15,8 @@ SteerControlType = car.CarParams.SteerControlType
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
-  def get_pid_accel_limits(CP, current_speed, cruise_speed, frogpilot_toggles):
-    CCP = CarControllerParams(CP)
-    return CCP.ACCEL_MIN, CCP.ACCEL_MAX
+  def get_pid_accel_limits(CP, current_speed, cruise_speed):
+    return CarControllerParams(CP).ACCEL_MIN, CarControllerParams(CP).ACCEL_MAX
 
   @staticmethod
   def _get_params(ret, candidate, fingerprint, car_fw, disable_openpilot_long, experimental_long, docs, params):

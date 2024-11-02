@@ -16,9 +16,11 @@ from openpilot.selfdrive.frogpilot.frogpilot_utilities import delete_file
 
 VERSION = "v10"
 
-DEFAULT_MODEL = "north-dakota"
-DEFAULT_MODEL_NAME = "North Dakota (Default)"
+DEFAULT_MODEL = "dragon-rider"
+DEFAULT_MODEL_NAME = "Dragon Rider"
 
+DEFAULT_CLASSIC_MODEL = "north-dakota"
+DEFAULT_CLASSIC_MODEL_NAME = "North Dakota (Default)"
 
 def process_model_name(model_name):
   cleaned_name = re.sub(r'[🗺️👀📡]', '', model_name)
@@ -54,7 +56,7 @@ class ModelManager:
     elif "gitlab" in repo_url:
       api_url = f"https://gitlab.com/api/v4/projects/{urllib.parse.quote_plus(project_path)}/repository/tree?ref={branch}"
     else:
-      raise ValueError(f"Unsupported repository URL format: {repo_url}. Supported formats are GitHub and GitLab URLs.")
+      return {}
 
     try:
       response = requests.get(api_url)
@@ -72,60 +74,61 @@ class ModelManager:
         return model_sizes
       else:
         return {file['name'].replace('.thneed', ''): file['size'] for file in thneed_files if 'size' in file}
-
-    except requests.RequestException as e:
-      raise ConnectionError(f"Failed to fetch model sizes from {'GitHub' if 'github' in repo_url else 'GitLab'}: {e}")
+    except Exception as e:
+      handle_request_error(f"Failed to fetch model sizes from {'GitHub' if 'github' in repo_url else 'GitLab'}: {e}", None, None, None, None)
+      return {}
 
   @staticmethod
   def copy_default_model():
-    classic_default_model_path = os.path.join(MODELS_PATH, f"{DEFAULT_MODEL}.thneed")
+    classic_default_model_path = os.path.join(MODELS_PATH, f"{DEFAULT_CLASSIC_MODEL}.thneed")
     source_path = os.path.join(BASEDIR, "selfdrive", "classic_modeld", "models", "supercombo.thneed")
 
     if os.path.isfile(source_path):
       shutil.copyfile(source_path, classic_default_model_path)
       print(f"Copied the classic default model from {source_path} to {classic_default_model_path}")
 
-    default_model_path = os.path.join(MODELS_PATH, "secret-good-openpilot.thneed")
+    default_model_path = os.path.join(MODELS_PATH, f"{DEFAULT_MODEL}.thneed")
     source_path = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "supercombo.thneed")
 
     if os.path.isfile(source_path):
       shutil.copyfile(source_path, default_model_path)
       print(f"Copied the default model from {source_path} to {default_model_path}")
 
-  def handle_verification_failure(self, model, model_path):
+  def handle_verification_failure(self, model, model_path, temp_model_path):
     if self.params_memory.get_bool(self.cancel_download_param):
       return
 
     print(f"Verification failed for model {model}. Retrying from GitLab...")
     model_url = f"{GITLAB_URL}Models/{model}.thneed"
-    download_file(self.cancel_download_param, model_path, self.download_progress_param, model_url, self.download_param, self.params_memory)
+    download_file(self.cancel_download_param, model_path, temp_model_path, self.download_progress_param, model_url, self.download_param, self.params_memory)
 
-    if verify_download(model_path, model_url):
+    if verify_download(model_path, temp_model_path, model_url):
       print(f"Model {model} redownloaded and verified successfully from GitLab.")
     else:
       handle_error(model_path, "GitLab verification failed", "Verification failed", self.download_param, self.download_progress_param, self.params_memory)
 
   def download_model(self, model_to_download):
     model_path = os.path.join(MODELS_PATH, f"{model_to_download}.thneed")
+    temp_model_path = f"{os.path.splitext(model_path)[0]}_temp.thneed"
     if os.path.isfile(model_path):
       handle_error(model_path, "Model already exists...", "Model already exists...", self.download_param, self.download_progress_param, self.params_memory)
       return
 
     repo_url = get_repository_url()
     if not repo_url:
-      handle_error(model_path, "GitHub and GitLab are offline...", "Repository unavailable", self.download_param, self.download_progress_param, self.params_memory)
+      handle_error(temp_model_path, "GitHub and GitLab are offline...", "Repository unavailable", self.download_param, self.download_progress_param, self.params_memory)
       return
 
     model_url = f"{repo_url}Models/{model_to_download}.thneed"
     print(f"Downloading model: {model_to_download}")
-    download_file(self.cancel_download_param, model_path, self.download_progress_param, model_url, self.download_param, self.params_memory)
+    download_file(self.cancel_download_param, model_path, temp_model_path, self.download_progress_param, model_url, self.download_param, self.params_memory)
 
-    if verify_download(model_path, model_url):
+    if verify_download(model_path, temp_model_path, model_url):
       print(f"Model {model_to_download} downloaded and verified successfully!")
       self.params_memory.put(self.download_progress_param, "Downloaded!")
       self.params_memory.remove(self.download_param)
     else:
-      self.handle_verification_failure(model_to_download, model_path)
+      self.handle_verification_failure(model_to_download, model_path, temp_model_path)
 
   def queue_model_download(self, model, model_name=None):
     while self.params_memory.get(self.download_param, encoding='utf-8'):
@@ -153,6 +156,8 @@ class ModelManager:
       self.params.put_bool_nonblocking("ModelsDownloaded", models_downloaded)
 
   def are_all_models_downloaded(self, available_models, repo_url):
+    available_models = set(available_models) - {DEFAULT_MODEL, DEFAULT_CLASSIC_MODEL}
+
     automatically_update_models = self.params.get_bool("AutomaticallyUpdateModels")
     all_models_downloaded = True
 
@@ -189,7 +194,7 @@ class ModelManager:
     current_model = self.params.get("Model", encoding='utf-8')
     current_model_name = self.params.get("ModelName", encoding='utf-8')
 
-    if "(Default)" in current_model_name and current_model_name != DEFAULT_MODEL_NAME:
+    if "(Default)" in current_model_name and current_model_name != DEFAULT_CLASSIC_MODEL_NAME:
       self.params.put_nonblocking("ModelName", current_model_name.replace(" (Default)", ""))
 
     available_models = self.params.get("AvailableModels", encoding='utf-8')
@@ -205,8 +210,8 @@ class ModelManager:
       model_name = model_file.replace(".thneed", "")
       if model_name not in available_models.split(','):
         if model_name == current_model:
-          self.params.put_nonblocking("Model", DEFAULT_MODEL)
-          self.params.put_nonblocking("ModelName", DEFAULT_MODEL_NAME)
+          self.params.put_nonblocking("Model", DEFAULT_CLASSIC_MODEL)
+          self.params.put_nonblocking("ModelName", DEFAULT_CLASSIC_MODEL_NAME)
         delete_file(os.path.join(MODELS_PATH, model_file))
         print(f"Deleted model file: {model_file} - Reason: Model is not in the list of available models")
 

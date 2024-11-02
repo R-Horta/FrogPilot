@@ -32,7 +32,7 @@ from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 from openpilot.system.hardware import HARDWARE
 
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_acceleration import get_max_allowed_accel
-from openpilot.selfdrive.frogpilot.frogpilot_variables import CRUISING_SPEED, NON_DRIVING_GEARS, get_frogpilot_toggles
+from openpilot.selfdrive.frogpilot.frogpilot_variables import NON_DRIVING_GEARS, get_frogpilot_toggles
 
 SOFT_DISABLE_TIME = 3  # seconds
 LDW_MIN_SPEED = 31 * CV.MPH_TO_MS
@@ -80,7 +80,6 @@ class Controls:
 
     # Ensure the current branch is cached, otherwise the first iteration of controlsd lags
     self.branch = get_short_branch()
-    self.block_user = self.branch == "FrogPilot-Development" and self.params.get("DongleId", encoding='utf-8') != "FrogsGoMoo"
 
     # Setup sockets
     self.pm = messaging.PubMaster(['controlsState', 'carControl', 'onroadEvents', 'frogpilotCarControl'])
@@ -99,7 +98,7 @@ class Controls:
     if REPLAY:
       # no vipc in replay will make them ignored anyways
       ignore += ['roadCameraState', 'wideRoadCameraState']
-    if get_frogpilot_toggles(True).radarless_model:
+    if get_frogpilot_toggles().radarless_model:
       ignore += ['radarState']
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                    'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'liveLocationKalman',
@@ -164,7 +163,7 @@ class Controls:
 
     self.can_log_mono_time = 0
 
-    self.startup_event = get_startup_event(car_recognized, not self.CP.passive, len(self.CP.carFw) > 0, self.block_user, get_frogpilot_toggles(True))
+    self.startup_event = get_startup_event(car_recognized, not self.CP.passive, len(self.CP.carFw) > 0)
 
     if not sounds_available:
       self.events.add(EventName.soundsUnavailable, static=True)
@@ -181,7 +180,7 @@ class Controls:
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
     # FrogPilot variables
-    self.frogpilot_toggles = get_frogpilot_toggles(True)
+    self.frogpilot_toggles = get_frogpilot_toggles()
 
     self.params_memory = Params("/dev/shm/params")
 
@@ -194,10 +193,9 @@ class Controls:
     self.resume_previously_pressed = False
     self.steer_saturated_event_triggered = False
 
+    self.block_user = self.branch == "FrogPilot-Development" and self.params.get("DongleId", encoding='utf-8') != "FrogsGoMoo"
     self.radarless_model = self.frogpilot_toggles.radarless_model
-
-    self.use_old_long = self.CP.carName == "hyundai" and not self.params.get_bool("NewLongAPI")
-    self.use_old_long |= self.CP.carName == "gm" and not self.params.get_bool("NewLongAPIGM")
+    self.use_old_long = self.frogpilot_toggles.old_long_api
 
     self.display_timer = 0
 
@@ -430,7 +428,7 @@ class Controls:
     self.events.add_from_msg(self.sm['frogpilotPlan'].frogpilotEvents)
 
     if self.block_user:
-      return EventName.blockUser
+      self.events.add(EventName.blockUser, static=True)
 
   def data_sample(self):
     """Receive data from sockets"""
@@ -571,7 +569,7 @@ class Controls:
     # Update VehicleModel
     lp = self.sm['liveParameters']
     x = max(lp.stiffnessFactor, 0.1)
-    sr = max(self.frogpilot_toggles.steer_ratio, 0.1) if self.frogpilot_toggles.use_custom_steer_ratio else max(lp.steerRatio, 0.1)
+    sr = max(self.frogpilot_toggles.steer_ratio if self.frogpilot_toggles.use_custom_steer_ratio else lp.steerRatio, 0.1)
     self.VM.update_params(x, sr)
 
     # Update Torque Params
@@ -618,7 +616,7 @@ class Controls:
 
     if not self.joystick_mode:
       # accel PID loop
-      pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS, self.frogpilot_toggles)
+      pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
       if self.frogpilot_toggles.sport_plus:
         pid_accel_limits = (pid_accel_limits[0], get_max_allowed_accel(CS.vEgo))
 
@@ -626,7 +624,7 @@ class Controls:
         t_since_plan = (self.sm.frame - self.sm.recv_frame['longitudinalPlan']) * DT_CTRL
         actuators.accel = self.LoC.update_old_long(CC.longActive, CS, long_plan, pid_accel_limits, t_since_plan)
       else:
-        actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop or self.sm['frogpilotPlan'].forcingStopLength <= 0, pid_accel_limits)
+        actuators.accel = self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop or self.sm['frogpilotPlan'].forcingStopLength == 0, pid_accel_limits)
 
       if len(long_plan.speeds):
         actuators.speed = long_plan.speeds[-1]

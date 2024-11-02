@@ -7,53 +7,52 @@ from openpilot.system.manager.process import PythonProcess, NativeProcess, Daemo
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
 
-def driverview(started: bool, params: Params, CP: car.CarParams, classic_model) -> bool:
+def driverview(started: bool, params: Params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return started or params.get_bool("IsDriverViewEnabled")
 
-def notcar(started: bool, params: Params, CP: car.CarParams, classic_model) -> bool:
+def notcar(started: bool, params: Params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return started and CP.notCar
 
-def iscar(started: bool, params: Params, CP: car.CarParams, classic_model) -> bool:
+def iscar(started: bool, params: Params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return started and not CP.notCar
 
-def logging(started, params, CP: car.CarParams, classic_model) -> bool:
+def logging(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   run = (not CP.notCar) or not params.get_bool("DisableLogging")
   return started and run
 
 def ublox_available() -> bool:
   return os.path.exists('/dev/ttyHS0') and not os.path.exists('/persist/comma/use-quectel-gps')
 
-def ublox(started, params, CP: car.CarParams, classic_model) -> bool:
+def ublox(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   use_ublox = ublox_available()
   if use_ublox != params.get_bool("UbloxAvailable"):
     params.put_bool("UbloxAvailable", use_ublox)
   return started and use_ublox
 
-def qcomgps(started, params, CP: car.CarParams, classic_model) -> bool:
+def qcomgps(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return started and not ublox_available()
 
-def always_run(started, params, CP: car.CarParams, classic_model) -> bool:
+def always_run(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return True
 
-def only_onroad(started: bool, params, CP: car.CarParams, classic_model) -> bool:
+def only_onroad(started: bool, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return started
 
-def only_offroad(started, params, CP: car.CarParams, classic_model) -> bool:
+def only_offroad(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return not started
 
 # FrogPilot functions
-def allow_logging(started, params, CP: car.CarParams, classic_model) -> bool:
-  allow_logging = not (params.get_bool("DeviceManagement") and params.get_bool("NoLogging"))
-  return allow_logging and logging(started, params, CP, classic_model)
+def allow_logging(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
+  return not getattr(frogpilot_toggles, 'no_logging', False) and logging(started, params, CP, classic_model, frogpilot_toggles)
 
-def allow_uploads(started, params, CP: car.CarParams, classic_model) -> bool:
-  allow_uploads = not (params.get_bool("DeviceManagement") and params.get_bool("NoUploads") and not params.get_bool("DisableOnroadUploads"))
+def allow_uploads(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
+  allow_uploads = not (getattr(frogpilot_toggles, 'no_uploads', False) and not getattr(frogpilot_toggles, 'no_onroad_uploads', False))
   return allow_uploads
 
-def run_classic_modeld(started, params, CP: car.CarParams, classic_model) -> bool:
+def run_classic_modeld(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return started and classic_model
 
-def run_new_modeld(started, params, CP: car.CarParams, classic_model) -> bool:
+def run_new_modeld(started, params, CP: car.CarParams, classic_model, frogpilot_toggles) -> bool:
   return started and not classic_model
 
 procs = [

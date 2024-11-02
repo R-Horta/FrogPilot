@@ -393,7 +393,7 @@ def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubM
       "NNFF Torque Controller loaded",
       model_name,
       AlertStatus.frogpilot, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, 5.0)
+      Priority.LOW, VisualAlert.none, AudibleAlert.engage, 5.0)
 
 
 EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
@@ -1023,8 +1023,8 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   # FrogPilot Events
   EventName.blockUser: {
-    ET.NO_ENTRY: Alert(
-      "Please don't use the 'Development' branch!",
+    ET.PERMANENT: Alert(
+      "Don't use the 'Development' branch!",
       "Forcing you into 'Dashcam Mode' for your safety",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.HIGHEST, VisualAlert.none, AudibleAlert.none, 1.),
