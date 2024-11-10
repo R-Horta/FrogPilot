@@ -1,7 +1,7 @@
 VERSION ""
 
 
-NS_ : 
+NS_ :
 	NS_DESC_
 	CM_
 	BA_DEF_
@@ -186,7 +186,9 @@ BO_ 646 DI_state: 7 ETH
  SG_ DI_locStatusChecksum : 0|8@1+ (1,0) [0|0] ""  X
 
 BO_ 785 UI_warning: 7 XXX
- SG_ buckleStatus : 13|1@0+ (1,0) [0|1] ""  XXX
+ SG_ buckleStatus : 13|1@0+ (1,0) [0|1] "" XXX
+ SG_ leftBlinkerOn : 22|1@0+ (1,0) [0|1] "" XXX
+ SG_ rightBlinkerOn : 23|1@0+ (1,0) [0|1] "" XXX
  SG_ anyDoorOpen : 28|1@0+ (1,0) [0|1] "" XXX
 
 BO_ 923 DAS_status: 8 PARTY
@@ -326,6 +328,4 @@ VAL_ 923 DAS_fusedSpeedLimit 31 "NONE" 0 "UNKNOWN_SNA" ;
 VAL_ 923 DAS_blindSpotRearRight 3 "SNA" 0 "NO_WARNING" 1 "WARNING_LEVEL_1" 2 "WARNING_LEVEL_2" ;
 VAL_ 923 DAS_blindSpotRearLeft 3 "SNA" 0 "NO_WARNING" 1 "WARNING_LEVEL_1" 2 "WARNING_LEVEL_2" ;
 VAL_ 923 DAS_autopilotState 15 "SNA" 8 "ABORTING" 3 "ACTIVE_NOMINAL" 0 "DISABLED" 4 "ACTIVE_RESTRICTED" 5 "ACTIVE_NAV" 14 "FAULT" 1 "UNAVAILABLE" 9 "ABORTED" 2 "AVAILABLE" ;
-
-
 

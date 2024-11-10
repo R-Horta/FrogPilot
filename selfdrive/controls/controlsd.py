@@ -164,7 +164,7 @@ class Controls:
 
     self.can_log_mono_time = 0
 
-    self.startup_event = get_startup_event(car_recognized, not self.CP.passive, len(self.CP.carFw) > 0, self.block_user, get_frogpilot_toggles(True))
+    self.startup_event = get_startup_event(car_recognized, not self.CP.passive, len(self.CP.carFw) > 0)
 
     if not sounds_available:
       self.events.add(EventName.soundsUnavailable, static=True)
@@ -617,7 +617,7 @@ class Controls:
 
     if not self.joystick_mode:
       # accel PID loop
-      pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS)
+      pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS, self.frogpilot_toggles)
       if self.frogpilot_toggles.sport_plus:
         pid_accel_limits = (pid_accel_limits[0], get_max_allowed_accel(CS.vEgo))
 
