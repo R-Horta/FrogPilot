@@ -204,7 +204,6 @@ frogpilot_default_params: list[tuple[str, str | bytes]] = [
   ("NavigationUI", "1"),
   ("NewLongAPI", "0"),
   ("NewLongAPIGM", "1"),
-  ("NewToyotaTune", "0"),
   ("NNFF", "1"),
   ("NNFFLite", "1"),
   ("NoLogging", "0"),
@@ -635,8 +634,6 @@ class FrogPilotVariables:
     toggle.show_speed_limit_offset = toggle.navigation_ui and self.params.get_bool("ShowSLCOffset")
     toggle.speed_limit_vienna = toggle.navigation_ui and self.params.get_bool("UseVienna")
 
-    toggle.new_toyota_tune = openpilot_longitudinal and car_make == "toyota" and self.params.get_bool("NewToyotaTune")
-
     toggle.old_long_api = openpilot_longitudinal and car_make == "gm" and not self.params.get_bool("NewLongAPIGM")
     toggle.old_long_api |= openpilot_longitudinal and car_make == "hyundai" and not self.params.get_bool("NewLongAPI")
 
@@ -913,8 +910,6 @@ class FrogPilotVariables:
       toggle.old_long_api = bool(openpilot_longitudinal and car_make == "gm" and not self.default_frogpilot_toggles.NewLongAPIGM)
       toggle.old_long_api |= bool(openpilot_longitudinal and car_make == "hyundai" and not self.default_frogpilot_toggles.NewLongAPI)
 
-      toggle.new_toyota_tune = bool(openpilot_longitudinal and car_make == "toyota" and self.default_frogpilot_toggles.NewToyotaTune)
-
       toggle.quality_of_life_lateral = bool(self.default_frogpilot_toggles.QOLLateral)
       toggle.pause_lateral_below_speed = int(self.default_frogpilot_toggles.PauseLateralSpeed) * speed_conversion if toggle.quality_of_life_lateral else 0
       toggle.pause_lateral_below_signal = bool(toggle.pause_lateral_below_speed != 0 and self.default_frogpilot_toggles.PauseLateralOnSignal)
@@ -1118,8 +1113,6 @@ class FrogPilotVariables:
 
       toggle.old_long_api = bool(openpilot_longitudinal and car_make == "gm" and not self.default_frogpilot_toggles.NewLongAPIGM)
       toggle.old_long_api |= bool(openpilot_longitudinal and car_make == "hyundai" and not self.default_frogpilot_toggles.NewLongAPI)
-
-      toggle.new_toyota_tune = bool(openpilot_longitudinal and car_make == "toyota" and self.default_frogpilot_toggles.NewToyotaTune)
 
       toggle.quality_of_life_lateral = bool(self.default_frogpilot_toggles.QOLLateral)
       toggle.pause_lateral_below_speed = int(self.default_frogpilot_toggles.PauseLateralSpeed) * speed_conversion if toggle.quality_of_life_lateral else 0

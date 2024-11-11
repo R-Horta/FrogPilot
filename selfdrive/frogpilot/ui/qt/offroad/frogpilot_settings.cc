@@ -204,7 +204,6 @@ void FrogPilotSettingsWindow::updateCarVariables() {
     isPIDCar = CP.getLateralTuning().which() == cereal::CarParams::LateralTuning::PID;
     isSubaru = carModel == "subaru";
     isToyota = carModel == "toyota";
-    isToyotaTuneSupported = carFingerprint == "LEXUS_ES_TSS2";
     isVolt = carFingerprint == "CHEVROLET_VOLT";
     forcingAutoTune = params.getBool("AdvancedLateralTune") && params.getBool("ForceAutoTune");
     steerFrictionStock = CP.getLateralTuning().getTorque().getFriction();
@@ -258,7 +257,6 @@ void FrogPilotSettingsWindow::updateCarVariables() {
     isPIDCar = false;
     isSubaru = true;
     isToyota = true;
-    isToyotaTuneSupported = true;
     isVolt = true;
   }
 
