@@ -12,7 +12,6 @@ from openpilot.selfdrive.car.fw_query_definitions import FwQueryConfig, LiveFwVe
 
 Ecu = car.CarParams.Ecu
 
-
 class CarControllerParams:
   STEER_STEP = 5        # LateralMotionControl, 20Hz
   LKA_STEP = 3          # Lane_Assist_Data1, 33Hz
@@ -40,16 +39,14 @@ class CarControllerParams:
   def __init__(self, CP):
     pass
 
-
 class FordFlags(IntFlag):
   # Static flags
   CANFD = 1
-
+  ALT_STEER_ANGLE = 2
 
 class RADAR:
   DELPHI_ESR = 'ford_fusion_2018_adas'
   DELPHI_MRR = 'FORD_CADS'
-
 
 class Footnote(Enum):
   FOCUS = CarFootnote(
@@ -57,7 +54,6 @@ class Footnote(Enum):
     "North and South America/Southeast Asia.",
     Column.MODEL,
   )
-
 
 @dataclass
 class FordCarDocs(CarDocs):
@@ -72,7 +68,6 @@ class FordCarDocs(CarDocs):
     else:
       self.car_parts = CarParts([Device.threex, harness])
 
-
 @dataclass
 class FordPlatformConfig(PlatformConfig):
   dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('ford_lincoln_base_pt', RADAR.DELPHI_MRR))
@@ -86,7 +81,6 @@ class FordPlatformConfig(PlatformConfig):
         name = f"{car_docs.make} {car_docs.model} Plug-in Hybrid {car_docs.years}"
         self.car_docs.append(replace(copy.deepcopy(car_docs), name=name))
 
-
 @dataclass
 class FordCANFDPlatformConfig(FordPlatformConfig):
   dbc_dict: DbcDict = field(default_factory=lambda: dbc_dict('ford_lincoln_base_pt', None))
@@ -95,11 +89,18 @@ class FordCANFDPlatformConfig(FordPlatformConfig):
     super().init()
     self.flags |= FordFlags.CANFD
 
-
 class CAR(Platforms):
   FORD_BRONCO_SPORT_MK1 = FordPlatformConfig(
     [FordCarDocs("Ford Bronco Sport 2021-23")],
     CarSpecs(mass=1625, wheelbase=2.67, steerRatio=17.7),
+  )
+  FORD_EDGE_MK2 = FordPlatformConfig(
+    [
+    FordCarDocs("Ford Edge 2022"),
+    FordCarDocs("Ford Fusion Retrofited 2013-2019"),
+    ],
+    CarSpecs(mass=1691, steerRatio=15.3, wheelbase=2.824),
+    flags=FordFlags.ALT_STEER_ANGLE,
   )
   FORD_ESCAPE_MK4 = FordPlatformConfig(
     [
@@ -143,7 +144,6 @@ class CAR(Platforms):
     CarSpecs(mass=2000, wheelbase=3.27, steerRatio=17.0),
   )
 
-
 # FW response contains a combined software and part number
 # A-Z except no I, O or W
 # e.g. NZ6A-14C204-AAA
@@ -158,7 +158,6 @@ FW_PATTERN = re.compile(b'^(?P<model_year_hint>[' + FW_ALPHABET + b'])' +
                         b'(?P<part_number>[0-9' + FW_ALPHABET + b']{5,6})-' +
                         b'(?P<software_revision>[' + FW_ALPHABET + b']{2,})\x00*$')
 
-
 def get_platform_codes(fw_versions: list[bytes] | set[bytes]) -> set[tuple[bytes, bytes]]:
   codes = set()
   for fw in fw_versions:
@@ -167,7 +166,6 @@ def get_platform_codes(fw_versions: list[bytes] | set[bytes]) -> set[tuple[bytes
       codes.add((match.group('platform_hint'), match.group('model_year_hint')))
 
   return codes
-
 
 def match_fw_to_car_fuzzy(live_fw_versions: LiveFwVersions, vin: str, offline_fw_versions: OfflineFwVersions) -> set[str]:
   candidates: set[str] = set()
@@ -210,7 +208,6 @@ def match_fw_to_car_fuzzy(live_fw_versions: LiveFwVersions, vin: str, offline_fw
 
   return candidates
 
-
 # All of these ECUs must be present and are expected to have platform codes we can match
 PLATFORM_CODE_ECUS = (Ecu.abs, Ecu.fwdCamera, Ecu.fwdRadar, Ecu.eps)
 
@@ -232,14 +229,11 @@ ASBUILT_BLOCKS: list[tuple[int, list]] = [
   (21, [Ecu.fwdCamera]),
 ]
 
-
 def ford_asbuilt_block_request(block_id: int):
   return bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER]) + p16(DATA_IDENTIFIER_FORD_ASBUILT + block_id - 1)
 
-
 def ford_asbuilt_block_response(block_id: int):
   return bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER + 0x40]) + p16(DATA_IDENTIFIER_FORD_ASBUILT + block_id - 1)
-
 
 FW_QUERY_CONFIG = FwQueryConfig(
   requests=[
