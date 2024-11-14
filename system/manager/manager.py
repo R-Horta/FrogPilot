@@ -6,8 +6,6 @@ import sys
 import threading
 import traceback
 
-from types import SimpleNamespace
-
 from cereal import log
 import cereal.messaging as messaging
 import openpilot.system.sentry as sentry
@@ -166,7 +164,7 @@ def manager_thread() -> None:
   pm = messaging.PubMaster(['managerState'])
 
   write_onroad_params(False, params)
-  ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore, classic_model=False, frogpilot_toggles=SimpleNamespace())
+  ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore, classic_model=False, frogpilot_toggles=None)
 
   started_prev = False
 
@@ -174,7 +172,8 @@ def manager_thread() -> None:
   params_memory = Params("/dev/shm/params")
 
   FrogPilotVariables().update(False)
-  frogpilot_toggles = get_frogpilot_toggles(True)
+  frogpilot_toggles = get_frogpilot_toggles()
+
   classic_model = frogpilot_toggles.classic_model
 
   while True:

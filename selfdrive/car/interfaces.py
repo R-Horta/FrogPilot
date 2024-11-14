@@ -225,7 +225,7 @@ class CarInterfaceBase(ABC):
     self.CC: CarControllerBase = CarController(dbc_name, CP, self.VM)
 
     # FrogPilot variables
-    self.frogpilot_toggles = get_frogpilot_toggles(True)
+    self.frogpilot_toggles = get_frogpilot_toggles()
 
     self.params = Params()
     self.params_memory = Params("/dev/shm/params")

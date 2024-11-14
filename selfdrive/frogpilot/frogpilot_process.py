@@ -145,7 +145,7 @@ def frogpilot_thread():
   time_validated = False
   toggles_updated = False
 
-  frogpilot_toggles = get_frogpilot_toggles(True)
+  frogpilot_toggles = get_frogpilot_toggles()
 
   frogs_go_moo = params.get("DongleId", encoding='utf-8') == "FrogsGoMoo"
 

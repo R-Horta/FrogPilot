@@ -227,7 +227,7 @@ def main(demo=False):
   params = Params()
 
   # FrogPilot variables
-  torque_key = get_frogpilot_toggles(True).part_model_param + "LiveTorqueParameters"
+  torque_key = get_frogpilot_toggles().part_model_param + "LiveTorqueParameters"
 
   with car.CarParams.from_bytes(params.get("CarParams", block=True)) as CP:
     estimator = TorqueEstimator(CP, torque_key)

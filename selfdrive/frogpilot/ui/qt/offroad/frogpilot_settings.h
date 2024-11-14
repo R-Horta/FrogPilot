@@ -26,7 +26,6 @@ public:
   bool isPIDCar;
   bool isSubaru;
   bool isToyota;
-  bool isToyotaTuneSupported;
   bool isVolt;
   bool forcingAutoTune;
   bool liveValid;

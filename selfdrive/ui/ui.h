@@ -87,6 +87,13 @@ const QColor bg_colors [] = {
   [STATUS_TRAFFIC_MODE_ACTIVE] = QColor(0xc9, 0x22, 0x31, 0xf1),
 };
 
+struct RadarTrack {
+  QPointF position;
+
+  float dRel;
+  float yRel;
+  float vRel;
+};
 
 typedef struct UIScene {
   bool calibration_valid = false;
@@ -138,6 +145,7 @@ typedef struct UIScene {
   bool acceleration_path;
   bool adjacent_path;
   bool adjacent_path_metrics;
+  bool always_on_lateral;
   bool always_on_lateral_active;
   bool aol_status_bar;
   bool big_map;
@@ -169,6 +177,7 @@ typedef struct UIScene {
   bool hide_speed;
   bool ip_metrics;
   bool jerk_metrics;
+  bool keep_screen_on;
   bool lateral_tuning_metrics;
   bool lead_metrics;
   bool live_valid;
@@ -176,6 +185,8 @@ typedef struct UIScene {
   bool memory_metrics;
   bool model_randomizer;
   bool model_ui;
+  bool no_logging;
+  bool no_uploads;
   bool numerical_temp;
   bool online;
   bool onroad_distance_button;
@@ -264,6 +275,8 @@ typedef struct UIScene {
   int steering_angle_deg;
   int stopped_equivalence;
   int tethering_config;
+
+  std::vector<RadarTrack> radar_tracks;
 
 } UIScene;
 
@@ -367,3 +380,4 @@ void update_line_data(const UIState *s, const cereal::XYZTData::Reader &line,
 
 // FrogPilot functions
 void ui_update_frogpilot_params(UIState *s);
+void update_radar_tracks(UIState *s, const capnp::List<cereal::LiveTracks>::Reader &radar_tracks, const cereal::XYZTData::Reader &line);

@@ -207,7 +207,7 @@ def hardware_thread(end_event, hw_queue) -> None:
   fan_controller = None
 
   # FrogPilot variables
-  frogpilot_toggles = get_frogpilot_toggles(True)
+  frogpilot_toggles = get_frogpilot_toggles()
 
   params_memory = Params("/dev/shm/params")
 

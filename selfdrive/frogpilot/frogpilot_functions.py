@@ -42,7 +42,7 @@ def backup_directory(backup, destination, success_message, fail_message, minimum
         print("Backup already exists. Aborting.")
         return
 
-      run_cmd(["sudo", "rsync", "-avq", os.path.join(backup, ".")], in_progress_destination, success_message, fail_message)
+      run_cmd(["sudo", "rsync", "-avq", os.path.join(backup, "."), in_progress_destination], success_message, fail_message)
       with tarfile.open(in_progress_compressed_backup, "w:gz") as tar:
         tar.add(in_progress_destination, arcname=os.path.basename(destination))
 

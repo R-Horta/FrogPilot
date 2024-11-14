@@ -16,9 +16,11 @@ from openpilot.selfdrive.frogpilot.frogpilot_utilities import delete_file
 
 VERSION = "v10"
 
-DEFAULT_MODEL = "north-dakota"
-DEFAULT_MODEL_NAME = "North Dakota (Default)"
+DEFAULT_MODEL = "dragon-rider"
+DEFAULT_MODEL_NAME = "Dragon Rider"
 
+DEFAULT_CLASSIC_MODEL = "north-dakota"
+DEFAULT_CLASSIC_MODEL_NAME = "North Dakota (Default)"
 
 def process_model_name(model_name):
   cleaned_name = re.sub(r'[🗺️👀📡]', '', model_name)
@@ -73,19 +75,19 @@ class ModelManager:
       else:
         return {file['name'].replace('.thneed', ''): file['size'] for file in thneed_files if 'size' in file}
     except Exception as e:
-      raise ConnectionError(f"Failed to fetch model sizes from {'GitHub' if 'github' in repo_url else 'GitLab'}: {e}")
+      handle_request_error(f"Failed to fetch model sizes from {'GitHub' if 'github' in repo_url else 'GitLab'}: {e}", None, None, None, None)
       return {}
 
   @staticmethod
   def copy_default_model():
-    classic_default_model_path = os.path.join(MODELS_PATH, f"{DEFAULT_MODEL}.thneed")
+    classic_default_model_path = os.path.join(MODELS_PATH, f"{DEFAULT_CLASSIC_MODEL}.thneed")
     source_path = os.path.join(BASEDIR, "selfdrive", "classic_modeld", "models", "supercombo.thneed")
 
     if os.path.isfile(source_path):
       shutil.copyfile(source_path, classic_default_model_path)
       print(f"Copied the classic default model from {source_path} to {classic_default_model_path}")
 
-    default_model_path = os.path.join(MODELS_PATH, "secret-good-openpilot.thneed")
+    default_model_path = os.path.join(MODELS_PATH, f"{DEFAULT_MODEL}.thneed")
     source_path = os.path.join(BASEDIR, "selfdrive", "modeld", "models", "supercombo.thneed")
 
     if os.path.isfile(source_path):
@@ -154,6 +156,8 @@ class ModelManager:
       self.params.put_bool_nonblocking("ModelsDownloaded", models_downloaded)
 
   def are_all_models_downloaded(self, available_models, repo_url):
+    available_models = set(available_models) - {DEFAULT_MODEL, DEFAULT_CLASSIC_MODEL}
+
     automatically_update_models = self.params.get_bool("AutomaticallyUpdateModels")
     all_models_downloaded = True
 
@@ -190,7 +194,7 @@ class ModelManager:
     current_model = self.params.get("Model", encoding='utf-8')
     current_model_name = self.params.get("ModelName", encoding='utf-8')
 
-    if "(Default)" in current_model_name and current_model_name != DEFAULT_MODEL_NAME:
+    if "(Default)" in current_model_name and current_model_name != DEFAULT_CLASSIC_MODEL_NAME:
       self.params.put_nonblocking("ModelName", current_model_name.replace(" (Default)", ""))
 
     available_models = self.params.get("AvailableModels", encoding='utf-8')
@@ -206,8 +210,8 @@ class ModelManager:
       model_name = model_file.replace(".thneed", "")
       if model_name not in available_models.split(','):
         if model_name == current_model:
-          self.params.put_nonblocking("Model", DEFAULT_MODEL)
-          self.params.put_nonblocking("ModelName", DEFAULT_MODEL_NAME)
+          self.params.put_nonblocking("Model", DEFAULT_CLASSIC_MODEL)
+          self.params.put_nonblocking("ModelName", DEFAULT_CLASSIC_MODEL_NAME)
         delete_file(os.path.join(MODELS_PATH, model_file))
         print(f"Deleted model file: {model_file} - Reason: Model is not in the list of available models")
 

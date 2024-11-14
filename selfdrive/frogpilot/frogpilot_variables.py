@@ -2,6 +2,7 @@ import json
 import math
 import os
 import random
+import time
 
 from types import SimpleNamespace
 
@@ -14,7 +15,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.system.hardware.power_monitoring import VBATT_PAUSE_CHARGING
 from panda import ALTERNATIVE_EXPERIENCE
 
-from openpilot.selfdrive.frogpilot.assets.model_manager import DEFAULT_MODEL, DEFAULT_MODEL_NAME, process_model_name
+from openpilot.selfdrive.frogpilot.assets.model_manager import DEFAULT_CLASSIC_MODEL, DEFAULT_CLASSIC_MODEL_NAME, process_model_name
 from openpilot.selfdrive.frogpilot.frogpilot_functions import MODELS_PATH
 
 GearShifter = car.CarState.GearShifter
@@ -28,13 +29,12 @@ THRESHOLD = 0.6                                         # 60% chance of conditio
 TO_RADIANS = math.pi / 180                              # Conversion factor from degrees to radians
 
 
-def get_frogpilot_toggles(block=False):
-  while block:
-    namespace = SimpleNamespace(**json.loads(Params().get("FrogPilotToggles", block=True)))
-    if namespace != SimpleNamespace():
-      return namespace
+def get_frogpilot_toggles():
+  while True:
+    toggles = Params().get("FrogPilotToggles")
+    if toggles is not None:
+      return SimpleNamespace(**json.loads(toggles))
     time.sleep(0.1)
-  return SimpleNamespace(**json.loads(Params().get("FrogPilotToggles")))
 
 
 def has_prime():
@@ -113,7 +113,7 @@ frogpilot_default_params: list[tuple[str, str | bytes]] = [
   ("CustomSounds", "frog"),
   ("CustomUI", "1"),
   ("DecelerationProfile", "1"),
-  ("DefaultModelName", DEFAULT_MODEL_NAME),
+  ("DefaultModelName", DEFAULT_CLASSIC_MODEL_NAME),
   ("DeveloperUI", "0"),
   ("DeviceManagement", "1"),
   ("DeviceShutdown", "9"),
@@ -195,8 +195,8 @@ frogpilot_default_params: list[tuple[str, str | bytes]] = [
   ("MapStyle", "0"),
   ("MaxDesiredAcceleration", "4.0"),
   ("MinimumLaneChangeSpeed", str(LANE_CHANGE_SPEED_MIN / CV.MPH_TO_MS)),
-  ("Model", DEFAULT_MODEL),
-  ("ModelName", DEFAULT_MODEL_NAME),
+  ("Model", DEFAULT_CLASSIC_MODEL),
+  ("ModelName", DEFAULT_CLASSIC_MODEL_NAME),
   ("ModelRandomizer", "0"),
   ("ModelUI", "1"),
   ("MTSCCurvatureCheck", "1"),
@@ -205,7 +205,6 @@ frogpilot_default_params: list[tuple[str, str | bytes]] = [
   ("NavigationUI", "1"),
   ("NewLongAPI", "0"),
   ("NewLongAPIGM", "1"),
-  ("NewToyotaTune", "0"),
   ("NNFF", "1"),
   ("NNFFLite", "1"),
   ("NoLogging", "0"),
@@ -592,11 +591,11 @@ class FrogPilotVariables:
       if self.params.get_bool("ModelRandomizer"):
         blacklisted_models = (self.params.get("BlacklistedModels", encoding='utf-8') or "").split(',')
         existing_models = [model for model in available_models.split(',') if model not in blacklisted_models and os.path.exists(os.path.join(MODELS_PATH, f"{model}.thneed"))]
-        toggle.model = random.choice(existing_models) if existing_models else DEFAULT_MODEL
+        toggle.model = random.choice(existing_models) if existing_models else DEFAULT_CLASSIC_MODEL
       else:
         toggle.model = self.params.get("Model", block=openpilot_installed and started, encoding='utf-8')
     else:
-      toggle.model = DEFAULT_MODEL
+      toggle.model = DEFAULT_CLASSIC_MODEL
     if toggle.model in available_models.split(',') and os.path.exists(os.path.join(MODELS_PATH, f"{toggle.model}.thneed")):
       current_model_name = available_model_names.split(',')[available_models.split(',').index(toggle.model)]
       self.params_memory.put("CurrentModelName", current_model_name)
@@ -606,7 +605,7 @@ class FrogPilotVariables:
       except UnknownKeyName:
         toggle.part_model_param = ""
     else:
-      toggle.model = DEFAULT_MODEL
+      toggle.model = DEFAULT_CLASSIC_MODEL
       toggle.part_model_param = ""
     classic_models = self.params.get("ClassicModels", encoding='utf-8') or ""
     toggle.classic_model = classic_models and toggle.model in classic_models.split(',')
@@ -632,8 +631,6 @@ class FrogPilotVariables:
     toggle.road_name_ui = toggle.navigation_ui and self.params.get_bool("RoadNameUI")
     toggle.show_speed_limit_offset = toggle.navigation_ui and self.params.get_bool("ShowSLCOffset")
     toggle.speed_limit_vienna = toggle.navigation_ui and self.params.get_bool("UseVienna")
-
-    toggle.new_toyota_tune = openpilot_longitudinal and car_make == "toyota" and self.params.get_bool("NewToyotaTune")
 
     toggle.old_long_api = openpilot_longitudinal and car_make == "gm" and not self.params.get_bool("NewLongAPIGM")
     toggle.old_long_api |= openpilot_longitudinal and car_make == "hyundai" and not self.params.get_bool("NewLongAPI")
@@ -884,7 +881,7 @@ class FrogPilotVariables:
       toggle.lead_detection_probability = clip(float(self.default_frogpilot_toggles.LeadDetectionThreshold) / 100, 0.01, 0.99) if toggle.longitudinal_tuning else 0.5
       toggle.max_desired_acceleration = clip(float(self.default_frogpilot_toggles.MaxDesiredAcceleration), 0.1, 4.0) if toggle.longitudinal_tuning else 4.0
 
-      toggle.model = DEFAULT_MODEL
+      toggle.model = DEFAULT_CLASSIC_MODEL
       toggle.part_model_param = ""
       toggle.classic_model = bool(classic_models and toggle.model in classic_models.split(','))
       toggle.navigationless_model = bool(navigation_models and toggle.model not in navigation_models.split(','))
@@ -910,8 +907,6 @@ class FrogPilotVariables:
 
       toggle.old_long_api = bool(openpilot_longitudinal and car_make == "gm" and not self.default_frogpilot_toggles.NewLongAPIGM)
       toggle.old_long_api |= bool(openpilot_longitudinal and car_make == "hyundai" and not self.default_frogpilot_toggles.NewLongAPI)
-
-      toggle.new_toyota_tune = bool(openpilot_longitudinal and car_make == "toyota" and self.default_frogpilot_toggles.NewToyotaTune)
 
       toggle.quality_of_life_lateral = bool(self.default_frogpilot_toggles.QOLLateral)
       toggle.pause_lateral_below_speed = int(self.default_frogpilot_toggles.PauseLateralSpeed) * speed_conversion if toggle.quality_of_life_lateral else 0
@@ -1093,7 +1088,7 @@ class FrogPilotVariables:
       toggle.lead_detection_probability = clip(float(self.default_frogpilot_toggles.LeadDetectionThreshold) / 100, 0.01, 0.99) if toggle.longitudinal_tuning else 0.5
       toggle.max_desired_acceleration = clip(float(self.default_frogpilot_toggles.MaxDesiredAcceleration), 0.1, 4.0) if toggle.longitudinal_tuning else 4.0
 
-      toggle.model = DEFAULT_MODEL
+      toggle.model = DEFAULT_CLASSIC_MODEL
       toggle.part_model_param = ""
       toggle.classic_model = bool(classic_models and toggle.model in classic_models.split(','))
       toggle.navigationless_model = bool(navigation_models and toggle.model not in navigation_models.split(','))
@@ -1116,8 +1111,6 @@ class FrogPilotVariables:
 
       toggle.old_long_api = bool(openpilot_longitudinal and car_make == "gm" and not self.default_frogpilot_toggles.NewLongAPIGM)
       toggle.old_long_api |= bool(openpilot_longitudinal and car_make == "hyundai" and not self.default_frogpilot_toggles.NewLongAPI)
-
-      toggle.new_toyota_tune = bool(openpilot_longitudinal and car_make == "toyota" and self.default_frogpilot_toggles.NewToyotaTune)
 
       toggle.quality_of_life_lateral = bool(self.default_frogpilot_toggles.QOLLateral)
       toggle.pause_lateral_below_speed = int(self.default_frogpilot_toggles.PauseLateralSpeed) * speed_conversion if toggle.quality_of_life_lateral else 0

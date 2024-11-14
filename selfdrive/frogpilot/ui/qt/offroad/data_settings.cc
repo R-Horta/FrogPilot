@@ -10,7 +10,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
         deleteDrivingDataBtn->setEnabled(false);
         deleteDrivingDataBtn->setValue(tr("Deleting..."));
 
-        std::system("rm -rf /data/media/0/realdata");
+        std::system("find /data/media/0/realdata -mindepth 1 -delete");
 
         deleteDrivingDataBtn->setValue(tr("Deleted!"));
 
@@ -86,7 +86,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
       if (!nameSelection.isEmpty()) {
         bool compressed = FrogPilotConfirmationDialog::yesorno(tr("Do you want to compress this backup? The end file size will be 2.25x smaller, but can take 10+ minutes."), this);
         std::thread([=]() {
-          device()->resetInteractiveTimeout(300);
+          uiState()->scene.keep_screen_on = true;
 
           frogpilotBackupBtn->setEnabled(false);
           frogpilotBackupBtn->setValue(tr("Backing..."));
@@ -116,7 +116,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
           frogpilotBackupBtn->setValue("");
           frogpilotBackupBtn->setEnabled(true);
 
-          device()->resetInteractiveTimeout(30);
+          uiState()->scene.keep_screen_on = false;
         }).detach();
       }
 
@@ -155,7 +155,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
       if (!selection.isEmpty()) {
         if (ConfirmationDialog::confirm(tr("Are you sure you want to restore this version of FrogPilot?"), tr("Restore"), this)) {
           std::thread([=]() {
-            device()->resetInteractiveTimeout(300);
+            uiState()->scene.keep_screen_on = true;
 
             frogpilotBackupBtn->setEnabled(false);
             frogpilotBackupBtn->setValue(tr("Restoring..."));
@@ -198,7 +198,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
                 frogpilotBackupBtn->setValue("");
                 frogpilotBackupBtn->setEnabled(true);
 
-                device()->resetInteractiveTimeout(30);
+                uiState()->scene.keep_screen_on = false;
               }
             } else {
               frogpilotBackupBtn->setValue(tr("Failed..."));
@@ -206,7 +206,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
               frogpilotBackupBtn->setValue("");
               frogpilotBackupBtn->setEnabled(true);
 
-              device()->resetInteractiveTimeout(30);
+              uiState()->scene.keep_screen_on = false;
             }
           }).detach();
         }

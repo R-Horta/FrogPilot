@@ -25,6 +25,7 @@ from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
 
+from openpilot.selfdrive.frogpilot.assets.model_manager import DEFAULT_MODEL
 from openpilot.selfdrive.frogpilot.frogpilot_functions import MODELS_PATH
 from openpilot.selfdrive.frogpilot.frogpilot_variables import get_frogpilot_toggles
 
@@ -58,7 +59,7 @@ class ModelState:
   def __init__(self, context: CLContext, frogpilot_toggles: SimpleNamespace):
     # FrogPilot variables
     model_path = Path(__file__).parent / f'{MODELS_PATH}/{frogpilot_toggles.model}.thneed'
-    if model_path.exists():
+    if frogpilot_toggles.model != DEFAULT_MODEL and model_path.exists():
       MODEL_PATHS[ModelRunner.THNEED] = model_path
 
     self.frame = ModelFrame(context)
@@ -146,7 +147,7 @@ def main(demo=False):
   cloudlog.warning("CL context ready; loading model")
 
   # FrogPilot variables
-  frogpilot_toggles = get_frogpilot_toggles(True)
+  frogpilot_toggles = get_frogpilot_toggles()
 
   model = ModelState(cl_context, frogpilot_toggles)
   cloudlog.warning("models loaded, modeld starting")

@@ -4,7 +4,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
   const std::vector<std::tuple<QString, QString, QString, QString>> visualToggles {
     {"QOLVisuals", tr("Accessibility"), tr("Visual features to improve your overall openpilot experience."), "../frogpilot/assets/toggle_icons/icon_accessibility.png"},
     {"CameraView", tr("Camera View"), tr("Changes the camera view display. This is purely a visual change and doesn't impact how openpilot drives."), ""},
-    {"OnroadDistanceButton", tr("Onroad Personality Button"), tr("Displays the current driving personality on the screen. Tap to switch personalities, or long press for 2.5 seconds to activate 'Traffic' mode."), ""},
+    {"OnroadDistanceButton", tr("On Screen Personality Button"), tr("Displays the current driving personality on the screen. Tap to switch personalities, or long press for 2.5 seconds to activate 'Traffic' mode."), ""},
     {"DriverCamera", tr("Show Driver Camera When In Reverse"), tr("Displays the driver camera feed when the vehicle is in reverse."), ""},
     {"StandbyMode", tr("Standby Mode"), tr("Turns the screen off when driving and automatically wakes it up if engagement state changes or important alerts occur."), ""},
     {"StoppedTimer", tr("Stopped Timer"), tr("Activates a timer when stopped to indicate how long the vehicle has been stopped for."), ""},
