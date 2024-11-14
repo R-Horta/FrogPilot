@@ -336,6 +336,7 @@ frogpilot_default_params: list[tuple[str, str | bytes]] = [
   ("TurnDesires", "0"),
   ("UnlimitedLength", "1"),
   ("UnlockDoors", "1"),
+  ("UseFrogServer", "1"),
   ("UseSI", "1"),
   ("UseVienna", "0"),
   ("VisionTurnControl", "1"),
@@ -360,7 +361,6 @@ class FrogPilotVariables:
     self.params_memory = Params("/dev/shm/params")
 
   def update(self, started):
-    toggle = self.frogpilot_toggles
     openpilot_installed = self.params.get_bool("HasAcceptedTerms")
 
     key = "CarParams" if started else "CarParamsPersistent"
@@ -389,6 +389,8 @@ class FrogPilotVariables:
       max_acceleration_enabled = False
       openpilot_longitudinal = False
       pcm_cruise = False
+
+    toggle = self.frogpilot_toggles
 
     toggle.is_metric = self.params.get_bool("IsMetric")
     distance_conversion = 1 if toggle.is_metric else CV.FOOT_TO_METER
@@ -585,15 +587,16 @@ class FrogPilotVariables:
     toggle.lead_detection_probability = clip(self.params.get_int("LeadDetectionThreshold") / 100, 0.01, 0.99) if toggle.longitudinal_tuning else 0.5
     toggle.max_desired_acceleration = clip(self.params.get_float("MaxDesiredAcceleration"), 0.1, 4.0) if toggle.longitudinal_tuning else 4.0
 
-    available_models = self.params.get("AvailableModels", block=openpilot_installed and started, encoding='utf-8') or ""
-    available_model_names = self.params.get("AvailableModelsNames", block=openpilot_installed and started, encoding='utf-8') or ""
+    available_models = self.params.get("AvailableModels", encoding='utf-8') or ""
+    available_model_names = self.params.get("AvailableModelsNames", encoding='utf-8') or ""
+    toggle.model_randomizer = self.params.get_bool("ModelRandomizer")
     if available_models:
-      if self.params.get_bool("ModelRandomizer"):
+      if toggle.model_randomizer:
         blacklisted_models = (self.params.get("BlacklistedModels", encoding='utf-8') or "").split(',')
         existing_models = [model for model in available_models.split(',') if model not in blacklisted_models and os.path.exists(os.path.join(MODELS_PATH, f"{model}.thneed"))]
         toggle.model = random.choice(existing_models) if existing_models else DEFAULT_CLASSIC_MODEL
       else:
-        toggle.model = self.params.get("Model", block=openpilot_installed and started, encoding='utf-8')
+        toggle.model = self.params.get("Model", encoding='utf-8')
     else:
       toggle.model = DEFAULT_CLASSIC_MODEL
     if toggle.model in available_models.split(',') and os.path.exists(os.path.join(MODELS_PATH, f"{toggle.model}.thneed")):
